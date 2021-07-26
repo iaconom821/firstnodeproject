@@ -9,7 +9,7 @@ async function main() {
   const client = new MongoClient(uri);
   try {
    await client.connect();
-   await updatePersonAgeByName(client, 'Mike', {age: 29})
+   await deleteManyPeopleByMinimumAge(client, 20)
 
   } catch (e) {
       console.error(e);
@@ -20,7 +20,36 @@ async function main() {
 
 main().catch(console.error)
 
-function upsertPerson()
+async function deleteManyPeopleByMinimumAge(client, minAge){
+    const result = await client.db("FirstMongoDatabase").collection('people').deleteMany({age: {$lt: minAge}})
+
+    console.log(`${result.deletedCount} was/were deleted`)
+}
+
+async function deletePersonByName(client, personName){
+    const result = await client.db("FirstMongoDatabase").collection('people').deleteOne({name: personName});
+
+    console.log(`${result.deletedCount} was/were deleted`)
+} 
+
+async function updateAllPersonsToHaveSpecies(client) {
+    const result = await client.db("FirstMongoDatabase").collection('people').updateMany({species: {$exists: false}}, {$set: {species: "Unknown"}});
+
+    console.log(`${result.matchedCount} document(s) matched the query criteria`);
+    console.log(`${result.modifiedCount} was/were updated`)
+}
+
+async function upsertPersonByName(client, personName, updatedPerson) {
+    const result = await client.db("FirstMongoDatabase").collection('people').updateOne({ name: personName}, {$set: updatedPerson}, {upsert: true})
+
+    console.log(`${result.matchedCount} document(s) matched the query criteria`)
+
+    if(result.upsertedCount > 0){
+        console.log(`One document was inserted with the id of ${result.upsertedId}`);
+    } else {
+        console.log(`${result.modifiedCount} document(s) was/were updated`)
+    }
+}
 
 async function updatePersonAgeByName(client, personName, updatedAge){
     const result = await client.db("FirstMongoDatabase").collection('people').updateOne({ name: personName}, {$set: updatedAge})
